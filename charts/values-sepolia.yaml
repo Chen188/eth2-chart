@@ -193,3 +193,4 @@ affinity:
           values:
           - geth-lighthouse
       topologyKey: kubernetes.io/hostname
+      namespaceSelector: {}

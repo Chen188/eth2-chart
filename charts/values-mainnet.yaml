@@ -48,11 +48,11 @@ containers:
       - name: files
         mountPath: /root/files
       - name: data
-        mountPath: /root/.ethereum/mainnet
+        mountPath: /root/.ethereum
       - name: chaindata
-        mountPath: /root/.ethereum/mainnet/geth/chaindata
+        mountPath: /root/.ethereum/geth/chaindata
       - name: keystore
-        mountPath: /root/.ethereum/mainnet/keystore
+        mountPath: /root/.ethereum/keystore
       - name: jwt-secrets
         mountPath: /root/secrets
         readonly: true
@@ -172,11 +172,11 @@ services:
     ports:
       - name: geth-http
         port: 8545
-        nodePort: 30045
+        nodePort: 31045
         path: '/api/v1'
       - name: geth-ws
         port: 8546
-        nodePort: 30046
+        nodePort: 31046
         path: '/ws/api/v1'
     ingress: # whether create ingress controller
       enabled: false
@@ -192,3 +192,4 @@ affinity:
           values:
           - geth-lighthouse
       topologyKey: kubernetes.io/hostname
+      namespaceSelector: {}
