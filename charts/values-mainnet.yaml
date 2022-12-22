@@ -1,0 +1,194 @@
+replicaCount: 1
+
+persistence:
+  storageClass: gp2
+prometheus:
+  serviceMonitor:
+    enabled: false
+containers:
+  - name: geth
+    image:
+      name: geth
+      repository: ethereum/client-go
+      pullPolicy: IfNotPresent
+      tag: "v1.10.26"
+      command: ["geth"]
+      args: [
+          "--config", "/root/files/config.toml",
+          "--metrics",
+          "--metrics.addr", "0.0.0.0",
+          "--ipcdisable",
+          "--cache", "4000", # MB
+          "--authrpc.jwtsecret", "/root/secrets/jwt-secret",
+          "--authrpc.addr", "127.0.0.1",
+          "--authrpc.port", "8551",
+          "--authrpc.vhosts", "*",
+          "--http.corsdomain", "*",
+          "--http.rpcprefix", "/api/v1",
+          "--ws.rpcprefix", "/ws/api/v1",
+          "--verbosity", "3"
+        ]
+    ports:
+      - name: geth-http
+        containerPort: 8545
+      - name: geth-ws
+        containerPort: 8546
+      - name: geth-prometheus
+        containerPort: 6060
+      - name: geth-listener
+        containerPort: 30001
+        hostPort: 30001
+      - name: geth-discovery
+        containerPort: 30001
+        hostPort: 30001
+        protocol: UDP
+      - name: geth-jwt
+        containerPort: 8551
+    volumeMounts:
+      - name: files
+        mountPath: /root/files
+      - name: data
+        mountPath: /root/.ethereum/mainnet
+      - name: chaindata
+        mountPath: /root/.ethereum/mainnet/geth/chaindata
+      - name: keystore
+        mountPath: /root/.ethereum/mainnet/keystore
+      - name: jwt-secrets
+        mountPath: /root/secrets
+        readonly: true
+    prometheus:
+      path: /debug/metrics
+      port: 6060
+      prefix: geth_
+    livenessProbe: true
+    readinessProbe: true
+    resources: {}
+      # requests:
+      #   memory: 8Gi
+      #   cpu: "2"
+  - name: lighthouse-bn
+    image:
+      name: lighthouse
+      repository: sigp/lighthouse
+      pullPolicy: IfNotPresent
+      tag: "v3.3.0"
+      command: ["lighthouse"]
+      args:
+        [
+          "beacon",
+          "--network", "mainnet",
+          "--execution-endpoint", "http://127.0.0.1:8551",
+          "--execution-jwt", "/root/secrets/jwt-secret",
+          "--checkpoint-sync-url", "https://mainnet.checkpoint.sigp.io",
+          "--disable-deposit-contract-sync",
+          "--disable-upnp",
+          # The HTTP API is required for the beacon node to accept connections from
+          # the validator client, which manages keys. 
+          # The default listen address is 127.0.0.1:5052
+          "--http",
+          "--metrics",
+          "--metrics-address", "0.0.0.0",
+          "--metrics-port", "5054",
+          "--metrics-allow-origin", "*"
+        ]
+    ports:
+      - name: lt-http
+        containerPort: 5052
+      - name: lt-prometheus
+        containerPort: 5054
+      - name: lt-listener
+        containerPort: 9000
+        hostPort: 9000
+      - name: lt-discovery
+        containerPort: 9000
+        hostPort: 9000
+        protocol: UDP
+    volumeMounts:
+      - name: files
+        mountPath: /root/files
+      - name: data
+        mountPath: /root/.lighthouse/mainnet
+      - name: jwt-secrets
+        mountPath: /root/secrets
+        readOnly: true
+    prometheus:
+      path: /metrics
+      port: 5054
+      prefix: lighthouse_
+    livenessProbe: true
+    readinessProbe: true
+    resources: {}
+      # requests:
+      #   memory: 8Gi
+      #   cpu: "2"
+volumes:
+  - name: files
+    configMap:
+      name: "geth-files"
+  - name: data
+    persistence:
+      accessModes:
+        - ReadWriteOnce
+      size: 50G
+  - name: chaindata
+    persistence:
+      accessModes:
+        - ReadWriteOnce
+      size: 1500G
+  - name: keystore
+    persistence:
+      accessModes:
+        - ReadWriteOnce
+      size: 1G
+  - name: jwt-secrets
+    secret:
+      name: "eth2-jwt-secret"
+
+configmaps:
+  - name: "geth-files"
+    data:
+      config.toml: |
+        [Eth]
+        SyncMode = "snap"
+
+        [Node]
+        HTTPHost = "0.0.0.0"
+        HTTPPort = 8545
+        HTTPVirtualHosts = ["*"]
+        HTTPModules = ["net", "web3", "eth", "txpool"]
+        WSHost = "0.0.0.0"
+        WSPort = 8546
+        WSOrigins = ["*"]
+        WSModules = ["net", "web3", "eth", "txpool"]
+
+        [Node.P2P]
+        MaxPeers = 200
+        ListenAddr = ":30001"
+      genesis: ""
+
+services:
+  - name: rpc
+    type: NodePort
+    ports:
+      - name: geth-http
+        port: 8545
+        nodePort: 30045
+        path: '/api/v1'
+      - name: geth-ws
+        port: 8546
+        nodePort: 30046
+        path: '/ws/api/v1'
+    ingress: # whether create ingress controller
+      enabled: false
+nodeSelector: {}
+tolerations: []
+affinity:
+  podAntiAffinity:
+    requiredDuringSchedulingIgnoredDuringExecution:
+    - labelSelector:
+        matchExpressions:
+        - key: app.kubernetes.io/component
+          operator: In
+          values:
+          - geth-lighthouse
+      topologyKey: kubernetes.io/hostname

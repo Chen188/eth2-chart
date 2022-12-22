@@ -1,0 +1,19 @@
+apiVersion: v2
+name: geth-lighthouse
+description: Helm chart to run Ethereum node using geth and lighthouse
+type: application
+version: 1.0.0
+keywords:
+  - geth
+  - lighthouse
+  - Ethereum
+  - helm
+  - Kubernetes
+
+home: https://github.com/chen188/eth2-chart
+sources:
+  - https://github.com/chen188/eth2-chart
+maintainers:
+  - name: Chen188
+
+appVersion: "3.14"
