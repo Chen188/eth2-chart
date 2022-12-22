@@ -39,7 +39,7 @@ kubectl create secret generic eth2-jwt-secret --from-literal=jwt-secret=$(openss
 helm install my-eth2 -f charts/values-sepolia.yaml ./charts/ -n $NAMESPACE
 
 # for mainnet
-# helm install my-eth2 -f charts/values-sepolia.yaml ./charts/ -n $NAMESPACE
+# helm install my-eth2 -f charts/values-mainnet.yaml ./charts/ -n $NAMESPACE
 ```
 
 You can check the deployment status with:
