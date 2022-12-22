@@ -15,7 +15,7 @@ If you decide to continue with gp2 storage class, make sure you've installed the
 ### Clone the code
 
 ```bash
-git clone https://github.com/Chen188/geth-chart
+git clone https://github.com/Chen188/eth2-chart
 ```
 ### Create a dedicated k8s namespace
 
