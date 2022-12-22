@@ -76,6 +76,11 @@ curl -X POST \
 "http://k8s-eth2-xxxx-7eaf279140-1407294883.us-east-1.elb.amazonaws.com/api/v1"
 ```
 
+### Security Group
+Port 30001 TCP/UDP is used by geth client, 9000 TCP/UDP is used by lighthouse for p2p communication, all of them are adviced to be open to everyone to get as more peers as possible, check lighthouse [doc](https://lighthouse-book.sigmaprime.io/advanced_networking.html) for more info.
+
+You'll have to add rules to your node group's security group to allow these traffic, check [this](https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/working-with-security-groups.html#adding-security-group-rule) for how to do it manually.
+
 ## Acknowledgement
 
 This chart is developed based on [vulcanlink's repo](https://github.com/vulcanlink/charts).
